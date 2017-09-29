@@ -1,15 +1,15 @@
 name: Pysche communicator
 description: micros-psyche
-organization: "Builders & hackers"
+organization: Builders and hackers
 
 notifications:
   email: dkrishnamurthy@atlassian.com
 
 links:
   binary:
-    name: "${DOCKER_IMAGE}"
+    name: docker.atl-paas.net/dkrishnamurthy/psyche
     type: docker
-    tag: "${DOCKER_TAG}"
+    tag: 0.0.0
   healthcheck:
     uri: /healthcheck
   source:
