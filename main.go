@@ -32,6 +32,19 @@ func getResponse(source string, data []byte) msg {
 }
 
 func requestHandle(w http.ResponseWriter, req *http.Request) {
+	var stmt string
+	var httperr int
+
+	defer func() {
+		if httperr != 200 {
+			fmt.Println(stmt)
+
+			w.WriteHeader(httperr)
+			w.Write([]byte(stmt))
+			w.Write([]byte("\r\n"))
+		}
+	}()
+
 	fmt.Printf("micros_psyche: received messge from host %s\n", req.Host)
 
 	if req.Method == http.MethodPost {
@@ -40,15 +53,15 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 
 		ep, ok := postURL[target]
 		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Printf("micros_psyche: failed to find post url for target %s\n", target)
+			httperr = http.StatusBadRequest
+			stmt = fmt.Sprintf("micros_psyche: failed to find post url for target %s", target)
 			return
 		}
 
 		data, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Printf("micros_psyche: failed to read request body with error %s\n", err)
+			httperr = http.StatusBadRequest
+			stmt = fmt.Sprintf("micros_psyche: failed to read request body with error %s", err)
 			return
 		}
 
@@ -61,26 +74,23 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 		body := new(bytes.Buffer)
 		err = json.NewEncoder(body).Encode(&m)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Printf("micros_psyche: failed to encode response body with error %s\n", err)
+			httperr = http.StatusInternalServerError
+			stmt = fmt.Sprintf("micros_psyche: failed to encode response body with error %s", err)
 			return
 		}
 
 		resp, err := http.Post(ep, "application/json", body)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Printf("micros_psyche: http post to %s failed with error %s\n", ep, err)
+			httperr = http.StatusInternalServerError
+			stmt = fmt.Sprintf("micros_psyche: http post to %s failed with error %s", ep, err)
 			return
 		}
 
 		data, err = ioutil.ReadAll(resp.Body)
-		fmt.Printf("micros_psyche: http post received response %s\n", data)
 		resp.Body.Close()
 
-		w.WriteHeader(resp.StatusCode)
-		if resp.StatusCode != http.StatusOK {
-			w.Write(data)
-		}
+		httperr = resp.StatusCode
+		stmt = fmt.Sprintf("micros_psyche: http post received response %s", data)
 	}
 }
 
