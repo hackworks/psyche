@@ -9,7 +9,7 @@ import (
 )
 
 var roomMapping = map[string]string{
-	"garage":              "Dhruva's private room",
+	"garage":              "Dhruva private room",
 	"perms_dev":           "Perms Dev",
 	"permissions_service": "Permissions Service",
 	"triforce":            "Triforce (MTV Identity)",
@@ -32,7 +32,7 @@ func getResponse(source string, data []byte) msg {
 }
 
 func requestHandle(w http.ResponseWriter, req *http.Request) {
-	fmt.Printf("micros_psyche: received messge from host %s", req.Host)
+	fmt.Printf("micros_psyche: received messge from host %s\n", req.Host)
 
 	if req.Method == http.MethodPost {
 		source := req.URL.Query().Get("source")
@@ -41,14 +41,14 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 		ep, ok := postURL[target]
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Printf("micros_psyche: failed to find post url for target %s", target)
+			fmt.Printf("micros_psyche: failed to find post url for target %s\n", target)
 			return
 		}
 
 		data, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Printf("micros_psyche: failed to read request body with error %s", err)
+			fmt.Printf("micros_psyche: failed to read request body with error %s\n", err)
 			return
 		}
 
@@ -58,30 +58,23 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 		}
 
 		m := getResponse(sourceRoom, data)
-		data, err = json.Marshal(&m)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Printf("micros_psyche: failed to marshal response body %s with error %s", m, err)
-			return
-		}
-
 		body := new(bytes.Buffer)
-		err = json.NewEncoder(body).Encode(data)
+		err = json.NewEncoder(body).Encode(&m)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Printf("micros_psyche: failed to encode response body with error %s", err)
+			fmt.Printf("micros_psyche: failed to encode response body with error %s\n", err)
 			return
 		}
 
 		resp, err := http.Post(ep, "application/json", body)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Printf("micros_psyche: http post to %s failed with error %s", ep, err)
+			fmt.Printf("micros_psyche: http post to %s failed with error %s\n", ep, err)
 			return
 		}
 
 		data, err = ioutil.ReadAll(resp.Body)
-		fmt.Printf("micros_psyche: http post received response %s", data)
+		fmt.Printf("micros_psyche: http post received response %s\n", data)
 		resp.Body.Close()
 
 		w.WriteHeader(resp.StatusCode)
@@ -100,7 +93,7 @@ func main() {
 	http.HandleFunc("/healthcheck", healthcheckHandle)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		fmt.Printf("failed to start server with error %s", err)
+		fmt.Printf("failed to start server with error %s\n", err)
 		return
 	}
 }
