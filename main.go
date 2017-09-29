@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 )
 
 var roomMapping = map[string]string{
@@ -27,11 +27,13 @@ type msg struct {
 }
 
 func getResponse(source string, data []byte) msg {
-	str := fmt.Sprintf("message from %s: %s?", source, data)
+	str := fmt.Sprintf("Message from %s: %s?", source, data)
 	return msg{str, "text"}
 }
 
 func requestHandle(w http.ResponseWriter, req *http.Request) {
+	fmt.Printf("micros_psyche: received messge from host %s", req.Host)
+
 	if req.Method == http.MethodPost {
 		w.WriteHeader(http.StatusOK)
 
@@ -40,13 +42,13 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 
 		ep, ok := postURL[target]
 		if !ok {
-			fmt.Printf("failed to find post url for target %s", target)
+			fmt.Printf("micros_psyche: failed to find post url for target %s", target)
 			return
 		}
 
 		data, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			fmt.Printf("failed to read request body with error %s", err)
+			fmt.Printf("micros_psyche: failed to read request body with error %s", err)
 			return
 		}
 
@@ -58,12 +60,25 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 		m := getResponse(sourceRoom, data)
 		data, err = json.Marshal(&m)
 		if err != nil {
-			fmt.Printf("failed to marshal response body %s with error %s", m, err)
+			fmt.Printf("micros_psyche: failed to marshal response body %s with error %s", m, err)
 			return
 		}
 
-		body := strings.NewReader(string(data))
-		http.Post(ep, "application/json", body)
+		body := new(bytes.Buffer)
+		err = json.NewEncoder(body).Encode(data)
+		if err != nil {
+			fmt.Printf("micros_psyche: failed to encode response body with error %s", err)
+			return
+		}
+
+		resp, err := http.Post(ep, "application/json", body)
+		if err != nil {
+			fmt.Printf("micros_psyche: http post to %s failed with error %s", ep, err)
+		}
+
+		data, err = ioutil.ReadAll(resp.Body)
+		fmt.Printf("micros_psyche: http post received response %s", data)
+		resp.Body.Close()
 	}
 }
 
