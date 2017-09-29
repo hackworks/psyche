@@ -119,7 +119,7 @@ func relayHandle(w http.ResponseWriter, req *http.Request) {
 }
 
 func (d *sqlDB) registerHandle(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("Not yet implemented"))
+	registerInMemoryHandle(w, req)
 }
 
 func registerInMemoryHandle(w http.ResponseWriter, req *http.Request) {
@@ -127,17 +127,27 @@ func registerInMemoryHandle(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var r registerMsg
-	err := json.NewDecoder(req.Body).Decode(&r)
-	if err != nil {
+	r := getRegisterMsg(req)
+	if r == nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	roomMapping.Store(r.Key, &roomInfo{r.Name, r.URL})
 }
 
+func getRegisterMsg(req *http.Request) *registerMsg {
+	var r registerMsg
+	err := json.NewDecoder(req.Body).Decode(&r)
+	if err != nil || len(r.Key) == 0 || len(r.Name) == 0 || len(r.URL) == 0 {
+		return nil
+	}
+
+	return &r
+}
+
 func healthcheckHandle(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("ok"))
+	w.Write([]byte("ok\r\n"))
 }
 
 func main() {
