@@ -9,7 +9,7 @@ links:
   binary:
     name: docker.atl-paas.net/dkrishnamurthy/psyche
     type: docker
-    tag: 0.0.0
+    tag: 0.0.1
   healthcheck:
     uri: /healthcheck
   source:

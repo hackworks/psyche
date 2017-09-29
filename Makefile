@@ -1,5 +1,7 @@
 .PHONY: clean build
 
+version=0.0.1
+
 build: psyche psyche.linux
 
 psyche: main.go
@@ -11,16 +13,16 @@ psyche.linux: main.go
 	go build -o $@
 
 docker-build: psyche.linux
-	docker build -t docker.atl-paas.net/dkrishnamurthy/psyche:0.0.0 .
+	docker build -t docker.atl-paas.net/dkrishnamurthy/psyche:$(version) .
 
 docker-run: docker-build
-	docker run -ti --rm -p 8080:8080 docker.atl-paas.net/dkrishnamurthy/psyche:0.0.0
+	docker run -ti --rm -p 8080:8080 docker.atl-paas.net/dkrishnamurthy/psyche:$(version)
 
 docker-push: docker-build
-	docker push docker.atl-paas.net/dkrishnamurthy/psyche:0.0.0
+	docker push docker.atl-paas.net/dkrishnamurthy/psyche:$(version)
 
 deploy: docker-push
-	DOCKER_IMAGE=docker.atl-paas.net/dkrishnamurthy/psyche:0.0.0 DOCKER_TAG=0.0.0 micros service:deploy psyche -f psyche.sd.yml
+	DOCKER_IMAGE=docker.atl-paas.net/dkrishnamurthy/psyche:$(version) DOCKER_TAG=$(version) micros service:deploy psyche -f psyche.sd.yml
 
 clean:
 	rm -f psyche psyche.linux

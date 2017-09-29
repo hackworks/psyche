@@ -35,19 +35,19 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 	fmt.Printf("micros_psyche: received messge from host %s", req.Host)
 
 	if req.Method == http.MethodPost {
-		w.WriteHeader(http.StatusOK)
-
 		source := req.URL.Query().Get("source")
 		target := req.URL.Query().Get("target")
 
 		ep, ok := postURL[target]
 		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Printf("micros_psyche: failed to find post url for target %s", target)
 			return
 		}
 
 		data, err := ioutil.ReadAll(req.Body)
 		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Printf("micros_psyche: failed to read request body with error %s", err)
 			return
 		}
@@ -60,6 +60,7 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 		m := getResponse(sourceRoom, data)
 		data, err = json.Marshal(&m)
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Printf("micros_psyche: failed to marshal response body %s with error %s", m, err)
 			return
 		}
@@ -67,18 +68,26 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 		body := new(bytes.Buffer)
 		err = json.NewEncoder(body).Encode(data)
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Printf("micros_psyche: failed to encode response body with error %s", err)
 			return
 		}
 
 		resp, err := http.Post(ep, "application/json", body)
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Printf("micros_psyche: http post to %s failed with error %s", ep, err)
+			return
 		}
 
 		data, err = ioutil.ReadAll(resp.Body)
 		fmt.Printf("micros_psyche: http post received response %s", data)
 		resp.Body.Close()
+
+		w.WriteHeader(resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			w.Write(data)
+		}
 	}
 }
 
