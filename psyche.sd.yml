@@ -1,0 +1,20 @@
+name: Pysche communicator
+description: micros-psyche
+organization: "Builders & hackers"
+
+notifications:
+  email: dkrishnamurthy@atlassian.com
+
+links:
+  binary:
+    name: "${DOCKER_IMAGE}"
+    type: docker
+    tag: "${DOCKER_TAG}"
+  healthcheck:
+    uri: /healthcheck
+  source:
+    url: ssh://git@bitbucket.org/dkrishnamurthy/psyche.git
+
+scaling:
+  min: 1
+  instance: t2.nano
