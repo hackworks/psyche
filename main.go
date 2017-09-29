@@ -9,7 +9,7 @@ import (
 )
 
 var roomMapping = map[string]string{
-	"garage":              "Dhruva private room",
+	"garage":              "Dhruva's private room",
 	"perms_dev":           "Perms Dev",
 	"permissions_service": "Permissions Service",
 	"triforce":            "Triforce (MTV Identity)",
@@ -21,14 +21,21 @@ var postURL = map[string]string{
 	"triforce":            "https://botnana.domain.dev.atlassian.io/message?secret=c80c4ee687de9b95784916882d005a9e69f2ce91c76604a68e77cbdda2da79690ab5987058fc1aea",
 }
 
-type msg struct {
+type sendMsg struct {
 	Text   string `json:"text"`
 	Format string `json:"format"`
 }
 
-func getResponse(source string, data []byte) msg {
-	str := fmt.Sprintf("Message from %s: %s?", source, data)
-	return msg{str, "text"}
+type recvMsg struct {
+	Message string `json:"message"`
+	Sender  struct {
+		ID string `json:"id"`
+	} `json:"sender"`
+}
+
+func getResponse(source string, data recvMsg) sendMsg {
+	str := fmt.Sprintf("Message from room %s: %s?", source, data.Message)
+	return sendMsg{str, "text"}
 }
 
 func requestHandle(w http.ResponseWriter, req *http.Request) {
@@ -58,7 +65,8 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		data, err := ioutil.ReadAll(req.Body)
+		var r recvMsg
+		err := json.NewDecoder(req.Body).Decode(&r)
 		if err != nil {
 			httperr = http.StatusBadRequest
 			stmt = fmt.Sprintf("micros_psyche: failed to read request body with error %s", err)
@@ -70,7 +78,7 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 			sourceRoom = "Unknown"
 		}
 
-		m := getResponse(sourceRoom, data)
+		m := getResponse(sourceRoom, r)
 		body := new(bytes.Buffer)
 		err = json.NewEncoder(body).Encode(&m)
 		if err != nil {
@@ -86,9 +94,9 @@ func requestHandle(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		data, err = ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+		defer resp.Body.Close()
 
+		data, err := ioutil.ReadAll(resp.Body)
 		httperr = resp.StatusCode
 		stmt = fmt.Sprintf("micros_psyche: http post received response %s", data)
 	}
