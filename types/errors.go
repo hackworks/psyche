@@ -9,6 +9,15 @@ func (e ErrRelay) Error() string {
 	return e.Err.Error()
 }
 
+// ErrSearch captures relay plugin errors
+type ErrSearch struct {
+	Err error
+}
+
+func (e ErrSearch) Error() string {
+	return e.Err.Error()
+}
+
 // ErrRegister captures register plugin errors
 type ErrRegister struct {
 	Err error

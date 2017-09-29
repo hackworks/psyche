@@ -59,12 +59,16 @@ func main() {
 		dbh.SetMaxOpenConns(5)
 	}
 
+	// Plugins that require persistence
 	if dbh != nil {
 		psyches["register"] = plugins.NewRegisterPlugin(dbh, psyches)
 		http.HandleFunc("/register", httpHandler("register"))
 
 		psyches["bookmarks"] = plugins.NewBookmarkPlugin(dbh, psyches)
 		http.HandleFunc("/bookmark", httpHandler("bookmark"))
+
+		psyches["search"] = plugins.NewSearchPlugin(dbh, psyches)
+		http.HandleFunc("/search", httpHandler("search"))
 	}
 
 	psyches["relay"] = plugins.NewRelayPlugin(dbh, psyches)
