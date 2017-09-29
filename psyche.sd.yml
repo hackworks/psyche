@@ -15,6 +15,10 @@ links:
   source:
     url: ssh://git@bitbucket.org/dkrishnamurthy/psyche.git
 
+resources:
+  - type: postgres-db
+    name: psyche
+
 scaling:
   min: 1
   instance: t2.nano
