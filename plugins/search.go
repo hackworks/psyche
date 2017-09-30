@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"bitbucket.org/psyche/types"
 	"github.com/jdkato/prose/tokenize"
@@ -20,14 +19,7 @@ type searchPlugin struct {
 
 // NewBookmarkPlugin creates an instance of bookmark plugin implementing Psyche interface
 func NewSearchPlugin(db *sql.DB, p Psyches) Psyche {
-	r := &searchPlugin{types.DBH{db}, p}
-
-	_, err := r.db.Exec("CREATE TABLE IF NOT EXISTS bookmarks (user_id text, room_id text, tags text[], ctime date, message text)")
-	if err != nil {
-		return nil
-	}
-
-	return r
+	return &searchPlugin{types.DBH{db}, p}
 }
 
 func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg, error) {
@@ -46,21 +38,7 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		return nil, types.ErrSearch{errors.New("target room to send results missing")}
 	}
 
-	words := tokenize.NewTreebankWordTokenizer().Tokenize(rmsg.Message)
-
-	var tags []string
-	var isTag bool
-	for _, w := range words {
-		if w == "#" {
-			isTag = true
-			continue
-		}
-
-		if isTag {
-			isTag = false
-			tags = append(tags, strings.ToLower(w))
-		}
-	}
+	tags := tokenize.NewTreebankWordTokenizer().Tokenize(rmsg.Message)
 
 	// If there are no tags, bail out
 	if len(tags) == 0 {
@@ -84,10 +62,12 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		buff.WriteString(fmt.Sprintf("\n%s >\n%s\n", ct, msg))
 	}
 
-	smsg := types.SendMsg{buff.String(), "text"}
-	relay.RelayMsg(target, &smsg)
+	if buff.Len() > 0 {
+		smsg := types.SendMsg{buff.String(), "text"}
+		relay.RelayMsg(target, &smsg)
+	}
 
-	return &smsg, err
+	return nil, err
 }
 
 func (p *searchPlugin) Refresh() error {
