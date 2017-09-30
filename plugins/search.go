@@ -18,6 +18,9 @@ type searchPlugin struct {
 	plugins Psyches
 }
 
+// Limit the number of search results to prevent clogging output
+const resultLimit = 100
+
 // NewBookmarkPlugin creates an instance of bookmark plugin implementing Psyche interface
 func NewSearchPlugin(db *sql.DB, p Psyches) Psyche {
 	return &searchPlugin{types.DBH{db}, p}
@@ -52,14 +55,34 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		tags = append(tags, strings.ToLower(w))
 	}
 
-	// TODO: Support basic AND operation
-	// Initial implementation: Search for messages with any of the matching tags
-	rows, err := p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmarks WHERE room_id=$1 AND $2 && tags ORDER BY ctime DESC LIMIT 100",
-		rmsg.Context, pq.Array(tags))
+	// TODO:
+	// * Well defined search syntax
+	// * Date range based search
+	// * Support basic AND operation
+	// * Search for self tagged messages across rooms
+	// * Suggest tags to limit search
+	// * Background search jobs for more heuristics in the future
+
+	var err error
+	var rows *sql.Rows
+	scope := url.Query().Get("scope")
+
+	switch scope {
+	case "self", "me", "mine", "myself":
+		rows, err = p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmarks WHERE room_id=$1 AND $2 && tags AND user_id=$4 ORDER BY ctime DESC LIMIT $3",
+			rmsg.Context, pq.Array(tags), resultLimit+1, rmsg.Sender.ID)
+	case "room", "chatroom", "conversation":
+		fallthrough
+	default:
+		rows, err = p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmarks WHERE room_id=$1 AND $2 && tags ORDER BY ctime DESC LIMIT $3",
+			rmsg.Context, pq.Array(tags), resultLimit+1)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
+	var resultCount int
 	var msg, ct string
 	var buff bytes.Buffer
 	for rows.Next() {
@@ -68,10 +91,22 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 			break
 		}
 
-		buff.WriteString(fmt.Sprintf("\n%s >\n%s\n", ct, msg))
+		resultCount++
+
+		// NOTE: We fetch 1 more than the limit to determine if there are more results than the limit
+		if resultCount < resultLimit {
+			buff.WriteString(fmt.Sprintf("\n%s >\n%s\n", ct, msg))
+		}
 	}
 
-	if buff.Len() > 0 {
+	if resultCount > 0 {
+		// Provide hints if results are truncated due to search limit
+		if resultCount > resultLimit {
+			buff.WriteString(fmt.Sprintf("showing %d results, try refining search:\n", resultLimit))
+		} else {
+			buff.WriteString(fmt.Sprintf("showing %d results:\n", resultCount))
+		}
+
 		smsg := types.SendMsg{buff.String(), "text"}
 		relay.RelayMsg(target, &smsg)
 	}
