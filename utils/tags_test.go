@@ -1,4 +1,4 @@
-package plugins
+package utils
 
 import (
 	"testing"
@@ -15,13 +15,10 @@ func TestBookmarkPlugin_extractTags(t *testing.T) {
 	This is a test for extracting tags from messages with #imp and regular but important text
 	`
 
-	// Since we are testing the text extraction logic only - no DB
-	p := &bookmarkPlugin{}
-
-	tags := p.extractTags(msg, 0.05)
+	tags := ExtractTags(msg, 0.05)
 	require.NotEmpty(t, tags)
 
 	// Test message with ignore pattern
-	tags = p.extractTags(msg+"some ignore text @search pattern in message", 0.05)
+	tags = ExtractTags(msg+"some ignore text @search pattern in message", 0.05)
 	require.Empty(t, tags)
 }
