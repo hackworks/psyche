@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"strings"
+
 	"bitbucket.org/psyche/types"
 	"github.com/jdkato/prose/tokenize"
 	"github.com/lib/pq"
@@ -38,13 +40,30 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		return nil, types.ErrSearch{errors.New("target room to send results missing")}
 	}
 
-	tags := tokenize.NewTreebankWordTokenizer().Tokenize(rmsg.Message)
+	words := tokenize.NewTreebankWordTokenizer().Tokenize(rmsg.Message)
 
 	// If there are no tags, bail out
-	if len(tags) == 0 {
+	if len(words) == 0 {
 		return nil, nil
 	}
 
+	// Since we store tags without '#', strip them is someone puts them in
+	var tags []string
+	var isTag bool
+	for _, w := range words {
+		if w == "#" {
+			isTag = true
+			continue
+		}
+
+		if isTag {
+			isTag = false
+			tags = append(tags, strings.ToLower(w))
+		}
+	}
+
+	// TODO: Support basic AND operation
+	// Initial implementation: Search for messages with any of the matching tags
 	rows, err := p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmarks WHERE room_id=$1 AND $2 && tags ORDER BY ctime DESC LIMIT 100",
 		rmsg.Context, pq.Array(tags))
 	if err != nil {
