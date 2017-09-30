@@ -107,8 +107,8 @@ func (p *bookmarkPlugin) extractTags(msg string, pct float64) []string {
 		return nil
 	}
 
-	// Check if we have sufficient keywords to search this message or enrich it
-	moreTags := pct*doc.NumWords - float64(len(tags))
+	// Check if we have sufficient keywords with round-off to search this message or enrich it
+	moreTags := int(0.5 + (pct*doc.NumWords - float64(len(tags))))
 	if moreTags > 0 {
 		var kw keywordArray
 		for k, v := range doc.Keywords() {
@@ -116,7 +116,7 @@ func (p *bookmarkPlugin) extractTags(msg string, pct float64) []string {
 		}
 		sort.Sort(kw)
 
-		for cc := 0; cc < int(moreTags); cc++ {
+		for cc := 0; cc < moreTags; cc++ {
 			tags = append(tags, kw[cc].word)
 		}
 	}
