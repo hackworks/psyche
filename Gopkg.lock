@@ -2,8 +2,14 @@
 
 
 [[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/jdkato/prose"
-  packages = ["internal/util","tokenize"]
+  packages = ["internal/util","summarize","tokenize"]
   revision = "8857f6b577a7823b3c259ed8a85fee8a479b3277"
   version = "v1.0.0"
 
@@ -14,6 +20,24 @@
   revision = "b77235e3890a962fe8a6f8c4c7198679ca7814e7"
 
 [[projects]]
+  name = "github.com/montanaflynn/stats"
+  packages = ["."]
+  revision = "eeaced052adbcfeea372c749c281099ed7fdaa38"
+  version = "0.2.0"
+
+[[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert","require"]
+  revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
+  version = "v1.1.4"
+
+[[projects]]
   name = "gopkg.in/neurosnap/sentences.v1"
   packages = [".","data"]
   revision = "a7f18ead1433a139742a8b42ce7a059cfb484d60"
@@ -22,6 +46,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e85fc8f242fb77e38f4caee0f9e0a5e0ef810698ad557efcebe835c17b7f6161"
+  inputs-digest = "89a526cc2a258d12a6eb44c20306fe17d5cfb322a52ad41926a5a1bddf564685"
   solver-name = "gps-cdcl"
   solver-version = 1
