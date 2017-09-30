@@ -6,11 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-
 	"strings"
 
 	"bitbucket.org/psyche/types"
-	"github.com/jdkato/prose/tokenize"
+	"github.com/jdkato/prose/summarize"
 	"github.com/lib/pq"
 )
 
@@ -40,26 +39,17 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		return nil, types.ErrSearch{errors.New("target room to send results missing")}
 	}
 
-	words := tokenize.NewTreebankWordTokenizer().Tokenize(rmsg.Message)
+	doc := summarize.NewDocument(rmsg.Message)
 
 	// If there are no tags, bail out
-	if len(words) == 0 {
+	if doc.NumWords == 0 {
 		return nil, nil
 	}
 
 	// Since we store tags without '#', strip them is someone puts them in
 	var tags []string
-	var isTag bool
-	for _, w := range words {
-		if w == "#" {
-			isTag = true
-			continue
-		}
-
-		if isTag {
-			isTag = false
-			tags = append(tags, strings.ToLower(w))
-		}
+	for w, _ := range doc.WordFrequency {
+		tags = append(tags, strings.ToLower(w))
 	}
 
 	// TODO: Support basic AND operation
