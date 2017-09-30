@@ -100,14 +100,16 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 	}
 
 	if resultCount > 0 {
+		var resultHeader string
+
 		// Provide hints if results are truncated due to search limit
 		if resultCount > resultLimit {
-			buff.WriteString(fmt.Sprintf("showing %d results, try refining search:\n", resultLimit))
+			resultHeader = fmt.Sprintf("showing %d results, try refining search:\n", resultLimit)
 		} else {
-			buff.WriteString(fmt.Sprintf("showing %d results:\n", resultCount))
+			resultHeader = fmt.Sprintf("showing %d results:\n", resultCount)
 		}
 
-		smsg := types.SendMsg{buff.String(), "text"}
+		smsg := types.SendMsg{resultHeader + buff.String(), "text"}
 		relay.RelayMsg(target, &smsg)
 	}
 
