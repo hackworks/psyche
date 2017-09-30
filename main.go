@@ -56,7 +56,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to initialize DB connection with error %s", err)
 		}
-		dbh.SetMaxOpenConns(5)
+		dbh.SetMaxOpenConns(50)
 	}
 
 	// Plugins that require persistence
