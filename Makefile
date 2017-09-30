@@ -1,11 +1,12 @@
-.PHONY: clean build
+.PHONY: all psyche
 
 version=0.0.1
 
-build: psyche psyche.linux
+all: psyche
 
-psyche: main.go
+psyche:
 	go build -o $@
+	go test ./...
 
 psyche.linux: GOOS=linux
 psyche.linux: GOARCH=amd64
