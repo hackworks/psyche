@@ -64,7 +64,7 @@ func main() {
 		psyches["register"] = plugins.NewRegisterPlugin(dbh, psyches)
 		http.HandleFunc("/register", httpHandler("register"))
 
-		psyches["bookmarks"] = plugins.NewBookmarkPlugin(dbh, psyches)
+		psyches["bookmark"] = plugins.NewBookmarkPlugin(dbh, psyches)
 		http.HandleFunc("/bookmark", httpHandler("bookmark"))
 
 		psyches["search"] = plugins.NewSearchPlugin(dbh, psyches)

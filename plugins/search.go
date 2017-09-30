@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -66,7 +67,7 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		return nil, nil
 	}
 
-	rows, err := p.db.Query("SELECT ctime, message FROM bookmarks WHERE room_id=$1 AND $2 && tags ORDER BY ctime DESC LIMIT 10",
+	rows, err := p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmarks WHERE room_id=$1 AND $2 && tags ORDER BY ctime DESC LIMIT 100",
 		rmsg.Context, pq.Array(tags))
 	if err != nil {
 		return nil, err
@@ -80,9 +81,7 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 			break
 		}
 
-		buff.WriteString(ct)
-		buff.Write([]byte(" >\r\n"))
-		buff.WriteString(msg)
+		buff.WriteString(fmt.Sprintf("\n%s >\n%s\n", ct, msg))
 	}
 
 	smsg := types.SendMsg{buff.String(), "text"}
