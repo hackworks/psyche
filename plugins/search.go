@@ -27,6 +27,12 @@ func NewSearchPlugin(db *sql.DB, p Psyches) Psyche {
 }
 
 func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg, error) {
+	// Context: userbaseID:chatroomID
+	scope := strings.Split(rmsg.Context, ":")
+	if len(scope) != 2 {
+		return nil, types.ErrSearch{fmt.Errorf("missing userbase:chatroom for scope")}
+	}
+
 	val, ok := p.plugins["relay"]
 	if !ok {
 		return nil, types.ErrSearch{errors.New("failed to get replay plugin")}
@@ -70,17 +76,16 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 
 	var err error
 	var rows *sql.Rows
-	scope := url.Query().Get("scope")
 
-	switch scope {
+	switch url.Query().Get("scope") {
 	case "self", "me", "mine", "myself":
-		rows, err = p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmarks WHERE room_id=$1 AND $2 && tags AND user_id=$4 ORDER BY ctime DESC LIMIT $3",
-			rmsg.Context, pq.Array(tags), resultLimit+1, rmsg.Sender.ID)
+		rows, err = p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && tags OR $3 && keywords AND user_id=$5 ORDER BY ctime DESC LIMIT $4",
+			scope[0], scope[1], pq.Array(tags), resultLimit+1, rmsg.Sender.ID)
 	case "room", "chatroom", "conversation":
 		fallthrough
 	default:
-		rows, err = p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmarks WHERE room_id=$1 AND $2 && tags ORDER BY ctime DESC LIMIT $3",
-			rmsg.Context, pq.Array(tags), resultLimit+1)
+		rows, err = p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && tags OR $3 && keywords ORDER BY ctime DESC LIMIT $4",
+			scope[0], scope[1], pq.Array(tags), resultLimit+1)
 	}
 
 	if err != nil {

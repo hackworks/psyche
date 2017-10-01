@@ -35,58 +35,55 @@ var ignoreFilter = map[string]string{
 	"quiet":  "@",
 }
 
-func ExtractTags(msg string, pct float64) []string {
+func ExtractTags(msg string, pct float64) ([]string, []string) {
 	doc := summarize.NewDocument(msg)
 	words := tokenize.NewTreebankWordTokenizer().Tokenize(doc.Content)
 
-	// Using a map lets us de-duplicate tags
-	var tags = make(map[string]byte)
+	var tags, keywords []string
 	var prevWord string
+	var tagMap = make(map[string]byte)
 
 	for _, w := range words {
 		// Look for ignore filter and skip bookmarking them
 		if p, ok := ignoreFilter[w]; ok && prevWord == p {
-			return nil
+			return nil, nil
 		}
 
-		// Store the hash tags and ignore multiple hashes
+		// Store the hash tagMap and ignore multiple hashes
 		if prevWord == "#" && w != "#" {
-			tags[strings.ToLower(w)] = 1
+			lw := strings.ToLower(w)
+			tags = append(tags, lw)
+			tagMap[lw] = 1
 		}
 
 		prevWord = w
 	}
 
-	// TODO: For now, let us index only messages with explicit tags words
-	if len(tags) == 0 {
-		return nil
+	// TODO: For now, let us index only messages with explicit tagMap words
+	if len(tagMap) == 0 {
+		return nil, nil
 	}
 
 	// Check if we have sufficient keywords with round-off to search this message or enrich it
-	moreTags := int(0.5 + (pct*doc.NumWords - float64(len(tags))))
+	moreTags := int(0.5 + (pct*doc.NumWords - float64(len(tagMap))))
 	if moreTags > 0 {
 		var kw keywordArray
 		for k, v := range doc.Keywords() {
-			kw = append(kw, keyword{strings.ToLower(k), v})
+			lw := strings.ToLower(k)
+			if _, ok := tagMap[lw]; !ok {
+				kw = append(kw, keyword{lw, v})
+			}
 		}
 		sort.Sort(kw)
 
 		for _, w := range kw {
-			if moreTags == 0 {
+			if moreTags == len(keywords) {
 				break
 			}
 
-			if _, ok := tags[w.word]; !ok {
-				tags[w.word] = 1
-				moreTags--
-			}
+			keywords = append(keywords, w.word)
 		}
 	}
 
-	var res []string
-	for k, _ := range tags {
-		res = append(res, k)
-	}
-
-	return res
+	return tags, keywords
 }

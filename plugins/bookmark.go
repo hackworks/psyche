@@ -4,6 +4,10 @@ import (
 	"database/sql"
 	"net/url"
 
+	"strings"
+
+	"fmt"
+
 	"bitbucket.org/psyche/types"
 	"bitbucket.org/psyche/utils"
 	"github.com/lib/pq"
@@ -21,7 +25,10 @@ const tagsPerMessage = 0.05
 func NewBookmarkPlugin(db *sql.DB, p Psyches) Psyche {
 	r := &bookmarkPlugin{types.DBH{db}, p}
 
-	_, err := r.db.Exec("CREATE TABLE IF NOT EXISTS bookmarks (user_id text, room_id text, tags text[], ctime date, message text)")
+	// FIXME: DB admin job in the absence of shell access, devise a better approach for one-off jobs
+	// r.db.Exec("DROP TABLE bookmark")
+
+	_, err := r.db.Exec("CREATE TABLE IF NOT EXISTS bookmark (user_id text, userbase_id text, room_id text, tags text[], keywords text[], ctime date, message text)")
 	if err != nil {
 		return nil
 	}
@@ -34,16 +41,22 @@ func (p *bookmarkPlugin) Handle(u *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		return nil, nil
 	}
 
+	// Context: userbaseID:chatroomID
+	scope := strings.Split(rmsg.Context, ":")
+	if len(scope) != 2 {
+		return nil, types.ErrBookmark{fmt.Errorf("missing userbase:chatroom for scope")}
+	}
+
 	// Extract tags and smart tags from message
-	tags := utils.ExtractTags(rmsg.Message, tagsPerMessage)
+	tags, keywords := utils.ExtractTags(rmsg.Message, tagsPerMessage)
 
 	// If we do not have a single tag, this message is not meant for searching
 	if len(tags) == 0 {
 		return nil, nil
 	}
 
-	_, err := p.db.Exec("INSERT INTO bookmarks VALUES($1, $2, $3, NOW(), $4)",
-		rmsg.Sender.ID, rmsg.Context, pq.Array(tags), rmsg.Message)
+	_, err := p.db.Exec("INSERT INTO bookmark VALUES($1, $2, $3, $4, $5, NOW(), $6)",
+		rmsg.Sender.ID, scope[0], scope[1], pq.Array(tags), pq.Array(keywords), rmsg.Message)
 
 	return nil, err
 }

@@ -26,3 +26,12 @@ type ErrRegister struct {
 func (e ErrRegister) Error() string {
 	return e.Err.Error()
 }
+
+// ErrBookmark captures bookmark plugin errors
+type ErrBookmark struct {
+	Err error
+}
+
+func (e ErrBookmark) Error() string {
+	return e.Err.Error()
+}
