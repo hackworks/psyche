@@ -1,5 +1,5 @@
-name: Pysche communicator
-description: micros-psyche
+name: Pysche
+description: Make stride great again
 organization: Builders and hackers
 
 notifications:
@@ -21,4 +21,4 @@ resources:
 
 scaling:
   min: 1
-  instance: t2.nano
+  instance: t2.micro

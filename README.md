@@ -34,10 +34,13 @@ The `bookmark` plugin stores the message indexed by user defined `#hash` tags. I
 #### Search `/search`
 
 Simple tag based search for indexed data stored by `bookmark` plugin.
-The current state of implementation does `OR` based search. The results are scoped with in a room.
+The current state of implementation does `OR` and `AND` based search. The results are scoped with in a room.
 
-The next version will support scoping by search initiating user with in a room or across all rooms.
+Using `+` in the search query will initiate `AND` based query where all tags are matched.
 
+By default, the search is performed across all messages in a chat room. Providing `scope=self` in the query URL limits the search scope to messages sent by the searcher. This can be used to implement `starred` messages.
+
+The search results will be sent to a dedicated room registered by the user in the absence of an explicit `target` option in the query URL
 
 ### Artifacts and deployment
 
