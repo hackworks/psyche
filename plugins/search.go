@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"bitbucket.org/psyche/types"
-	"github.com/jdkato/prose/summarize"
+	"bitbucket.org/psyche/utils"
 	"github.com/lib/pq"
 )
 
@@ -19,7 +19,7 @@ type searchPlugin struct {
 }
 
 // Limit the number of search results to prevent clogging output
-const resultLimit = 100
+const resultLimit = 50
 
 // NewBookmarkPlugin creates an instance of bookmark plugin implementing Psyche interface
 func NewSearchPlugin(db *sql.DB, p Psyches) Psyche {
@@ -53,41 +53,44 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		target = rmsg.Sender.ID
 	}
 
-	doc := summarize.NewDocument(rmsg.Message)
-
-	// If there are no tags, bail out
-	if doc.NumWords == 0 {
-		return nil, nil
-	}
-
-	// Since we store tags without '#', strip them is someone puts them in
-	var tags []string
-	for w, _ := range doc.WordFrequency {
-		tags = append(tags, strings.ToLower(w))
-	}
-
 	// TODO:
 	// * Well defined search syntax
 	// * Date range based search
-	// * Support basic AND operation
 	// * Search for self tagged messages across rooms
 	// * Suggest tags to limit search
 	// * Background search jobs for more heuristics in the future
 
+	queryOp, tags := utils.ExtractQueryTags(rmsg.Message)
+	if len(tags) == 0 {
+		return nil, nil
+	}
+
+	const queryORSelf = "SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
+	const queryANDSelf = "SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
+
+	const queryORRoom = "SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) ORDER BY ctime DESC LIMIT $4"
+	const queryANDRoom = "SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) ORDER BY ctime DESC LIMIT $4"
+
 	var err error
 	var rows *sql.Rows
-
 	switch url.Query().Get("scope") {
 	case "self", "me", "mine", "myself":
-		rows, err = p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && tags OR $3 && keywords AND user_id=$5 ORDER BY ctime DESC LIMIT $4",
-			scope[0], scope[1], pq.Array(tags), resultLimit+1, rmsg.Sender.ID)
+		if queryOp == '+' {
+			rows, err = p.db.Query(queryANDSelf, scope[0], scope[1], pq.Array(tags), resultLimit+1, rmsg.Sender.ID)
+		} else {
+			rows, err = p.db.Query(queryORSelf, scope[0], scope[1], pq.Array(tags), resultLimit+1, rmsg.Sender.ID)
+		}
 	case "room", "chatroom", "conversation":
 		fallthrough
 	default:
-		rows, err = p.db.Query("SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && tags OR $3 && keywords ORDER BY ctime DESC LIMIT $4",
-			scope[0], scope[1], pq.Array(tags), resultLimit+1)
+		if queryOp == '+' {
+			rows, err = p.db.Query(queryANDRoom, scope[0], scope[1], pq.Array(tags), resultLimit+1)
+		} else {
+			rows, err = p.db.Query(queryORRoom, scope[0], scope[1], pq.Array(tags), resultLimit+1)
+		}
 	}
 
+	// Query failure, nothing much to do!
 	if err != nil {
 		return nil, err
 	}

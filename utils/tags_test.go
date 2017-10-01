@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBookmarkPlugin_extractTags(t *testing.T) {
+func TestExtractTags(t *testing.T) {
 	const msg = `
 	during the cluster split, gocql query takes too long and opened the circuit (because of circuit timeout)
 	usually it should return gocql error before we timeout.
@@ -21,4 +21,14 @@ func TestBookmarkPlugin_extractTags(t *testing.T) {
 	// Test message with ignore pattern
 	tags, keywords = ExtractTags(msg+"some ignore text @search pattern in message", 0.05)
 	require.Empty(t, append(tags, keywords...))
+}
+
+func TestExtractQueryTags(t *testing.T) {
+	const msg = `
+	Hello    this is+a message to search
+	`
+
+	op, tags := ExtractQueryTags(msg)
+	require.Equal(t, '+', op)
+	require.NotEmpty(t, tags)
 }

@@ -87,3 +87,18 @@ func ExtractTags(msg string, pct float64) ([]string, []string) {
 
 	return tags, keywords
 }
+
+// QueryTags parses the search query and returns the operation type and search words
+func ExtractQueryTags(msg string) (byte, []string) {
+	var queryOp byte
+
+	// Check for query operator
+	if strings.ContainsAny(msg, "+&") {
+		queryOp = '+'
+	}
+
+	// Extract words after cleanup of any operators
+	words := tokenize.NewWordBoundaryTokenizer().Tokenize(msg)
+
+	return queryOp, words
+}
