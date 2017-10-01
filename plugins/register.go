@@ -40,6 +40,11 @@ func (p *registerPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendM
 		return nil, err
 	}
 
+	// Simplify registering default target room for search results per user
+	if url.Query().Get("scope") == "self" && len(msg.Key) == 0 {
+		msg.Key = rmsg.Sender.ID
+	}
+
 	if len(msg.Key) == 0 || len(msg.URL) == 0 || len(msg.Name) == 0 {
 		return nil, types.ErrRegister{fmt.Errorf("missing key/url/name in %s", rmsg.Context)}
 	}
