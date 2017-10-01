@@ -39,8 +39,10 @@ func ExtractTags(msg string, pct float64) []string {
 	doc := summarize.NewDocument(msg)
 	words := tokenize.NewTreebankWordTokenizer().Tokenize(doc.Content)
 
-	var tags []string
+	// Using a map lets us de-duplicate tags
+	var tags = make(map[string]byte)
 	var prevWord string
+
 	for _, w := range words {
 		// Look for ignore filter and skip bookmarking them
 		if p, ok := ignoreFilter[w]; ok && prevWord == p {
@@ -49,7 +51,7 @@ func ExtractTags(msg string, pct float64) []string {
 
 		// Store the hash tags and ignore multiple hashes
 		if prevWord == "#" && w != "#" {
-			tags = append(tags, strings.ToLower(w))
+			tags[strings.ToLower(w)] = 1
 		}
 
 		prevWord = w
@@ -65,14 +67,26 @@ func ExtractTags(msg string, pct float64) []string {
 	if moreTags > 0 {
 		var kw keywordArray
 		for k, v := range doc.Keywords() {
-			kw = append(kw, keyword{k, v})
+			kw = append(kw, keyword{strings.ToLower(k), v})
 		}
 		sort.Sort(kw)
 
-		for cc := 0; cc < moreTags; cc++ {
-			tags = append(tags, kw[cc].word)
+		for _, w := range kw {
+			if moreTags == 0 {
+				break
+			}
+
+			if _, ok := tags[w.word]; !ok {
+				tags[w.word] = 1
+				moreTags--
+			}
 		}
 	}
 
-	return tags
+	var res []string
+	for k, _ := range tags {
+		res = append(res, k)
+	}
+
+	return res
 }
