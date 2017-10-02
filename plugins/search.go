@@ -65,11 +65,11 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		return nil, nil
 	}
 
-	const queryORSelf = "SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
-	const queryANDSelf = "SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
+	const queryORSelf = "SELECT ctime, message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
+	const queryANDSelf = "SELECT ctime, message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
 
-	const queryORRoom = "SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) ORDER BY ctime DESC LIMIT $4"
-	const queryANDRoom = "SELECT TO_CHAR(ctime, 'MM-DD-YYYY'), message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) ORDER BY ctime DESC LIMIT $4"
+	const queryORRoom = "SELECT ctime, message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) ORDER BY ctime DESC LIMIT $4"
+	const queryANDRoom = "SELECT ctime, message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) ORDER BY ctime DESC LIMIT $4"
 
 	var err error
 	var rows *sql.Rows
