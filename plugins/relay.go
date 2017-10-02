@@ -46,8 +46,7 @@ func (p *relayPlugin) init() {
 }
 
 func (p *relayPlugin) getResponse(source string, rmsg *types.RecvMsg) *types.SendMsg {
-	str := fmt.Sprintf("Message from room %s: %s?", source, rmsg.Message)
-	return &types.SendMsg{str, "text"}
+	return types.NewSendMsg(fmt.Sprintf("Message from room %s: %s?", source, rmsg.Message))
 }
 
 func (p *relayPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg, error) {
