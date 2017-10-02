@@ -12,6 +12,10 @@ type SendMsg struct {
 	Format string `json:"format"`
 }
 
+func NewSendMsg(msg string) *SendMsg {
+	return &SendMsg{msg, "text"}
+}
+
 // RecvMsg models the message received from botler
 type RecvMsg struct {
 	Message string `json:"message"`
@@ -19,10 +23,6 @@ type RecvMsg struct {
 	Sender  struct {
 		ID string `json:"id"`
 	} `json:"sender"`
-}
-
-type DBH struct {
-	*sql.DB
 }
 
 // NewRecvMsg constructs a RecvMsg from HTTP POST request
@@ -34,4 +34,8 @@ func NewRecvMsg(req io.Reader) (*RecvMsg, error) {
 	}
 
 	return &r, nil
+}
+
+type DBH struct {
+	*sql.DB
 }

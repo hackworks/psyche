@@ -29,6 +29,6 @@ func TestExtractQueryTags(t *testing.T) {
 	`
 
 	op, tags := ExtractQueryTags(msg)
-	require.Equal(t, '+', op)
+	require.Equal(t, byte('+'), op)
 	require.NotEmpty(t, tags)
 }

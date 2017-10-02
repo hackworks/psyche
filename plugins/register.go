@@ -1,9 +1,11 @@
 package plugins
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -33,20 +35,44 @@ func NewRegisterPlugin(db *sql.DB, p Psyches) Psyche {
 }
 
 func (p *registerPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg, error) {
-	reader := strings.NewReader(rmsg.Context)
+	// Extract key=value pairs from the message
+	fields := strings.Fields(rmsg.Message)
+	var options = make(map[string]string)
+	for _, f := range fields {
+		kv := strings.SplitN(f, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
 
-	var msg registerMsg
-	if err := json.NewDecoder(reader).Decode(&msg); err != nil {
-		return nil, err
+		options[strings.ToLower(kv[0])] = kv[1]
 	}
 
-	// Simplify registering default target room for search results per user
-	if url.Query().Get("scope") == "self" && len(msg.Key) == 0 {
+	var msg registerMsg
+
+	// The POST URL for the room without which there is nothing much to do
+	if v, ok := options["url"]; ok {
+		msg.URL = v
+		if err := validateURL(msg.URL); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, types.ErrRegister{Err: fmt.Errorf("missing key/url in %s", rmsg.Message)}
+	}
+
+	// Used for relaying messages, use this as target in supporting endpoints
+	if v, ok := options["key"]; ok {
+		msg.Key = v
+	} else {
 		msg.Key = rmsg.Sender.ID
 	}
 
-	if len(msg.Key) == 0 || len(msg.URL) == 0 || len(msg.Name) == 0 {
-		return nil, types.ErrRegister{fmt.Errorf("missing key/url/name in %s", rmsg.Context)}
+	// A description for the room - helps with human readable output in relayed messages
+	if v, ok := options["name"]; ok {
+		msg.Name = v
+	} else if v, ok := options["description"]; ok {
+		msg.Name = v
+	} else {
+		msg.Name = "Unnamed room"
 	}
 
 	// Trigger a refresh in affected plugins
@@ -70,4 +96,26 @@ func (p *registerPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendM
 
 func (p *registerPlugin) Refresh() error {
 	return nil
+}
+
+func validateURL(url string) (err error) {
+	// Post the response to registered room URL
+	body := new(bytes.Buffer)
+	err = json.NewEncoder(body).Encode(types.NewSendMsg("Psyche room registration invoked"))
+	if err != nil {
+		return types.ErrRelay{Err: fmt.Errorf("failed to encode response body with error %s", err)}
+	}
+
+	resp, err := http.Post(url, "application/json", body)
+	if err == nil {
+		defer resp.Body.Close()
+	}
+
+	if err != nil {
+		err = types.ErrRelay{Err: fmt.Errorf("http post to %s failed with error %s", url, err)}
+	} else if resp.StatusCode != http.StatusOK {
+		err = types.ErrRelay{Err: fmt.Errorf("http post to %s returned error %s", url, resp.Status)}
+	}
+
+	return err
 }
