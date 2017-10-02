@@ -52,9 +52,6 @@ func (p *registerPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendM
 	// The POST URL for the room without which there is nothing much to do
 	if v, ok := options["url"]; ok {
 		msg.URL = v
-		if err := validateURL(msg.URL); err != nil {
-			return nil, err
-		}
 	} else {
 		return nil, types.ErrRegister{Err: fmt.Errorf("missing key/url in %s", rmsg.Message)}
 	}
@@ -73,6 +70,11 @@ func (p *registerPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendM
 		msg.Name = v
 	} else {
 		msg.Name = "Unnamed room"
+	}
+
+	// Validate the URL and other inputs
+	if err := validateURL(msg); err != nil {
+		return nil, err
 	}
 
 	// Trigger a refresh in affected plugins
@@ -98,23 +100,25 @@ func (p *registerPlugin) Refresh() error {
 	return nil
 }
 
-func validateURL(url string) (err error) {
+func validateURL(msg registerMsg) (err error) {
+	str := fmt.Sprintf("Psyche room registration invoked by %s and url %s", msg.Key, msg.URL)
+
 	// Post the response to registered room URL
 	body := new(bytes.Buffer)
-	err = json.NewEncoder(body).Encode(types.NewSendMsg("Psyche room registration invoked"))
+	err = json.NewEncoder(body).Encode(types.NewSendMsg(str))
 	if err != nil {
 		return types.ErrRelay{Err: fmt.Errorf("failed to encode response body with error %s", err)}
 	}
 
-	resp, err := http.Post(url, "application/json", body)
+	resp, err := http.Post(msg.URL, "application/json", body)
 	if err == nil {
 		defer resp.Body.Close()
 	}
 
 	if err != nil {
-		err = types.ErrRelay{Err: fmt.Errorf("http post to %s failed with error %s", url, err)}
+		err = types.ErrRelay{Err: fmt.Errorf("http post to %s failed with error %s", msg.URL, err)}
 	} else if resp.StatusCode != http.StatusOK {
-		err = types.ErrRelay{Err: fmt.Errorf("http post to %s returned error %s", url, resp.Status)}
+		err = types.ErrRelay{Err: fmt.Errorf("http post to %s returned error %s", msg.URL, resp.Status)}
 	}
 
 	return err

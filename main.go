@@ -38,6 +38,8 @@ func httpHandler(endpoint string) func(w http.ResponseWriter, req *http.Request)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			w.Write([]byte("\r\n"))
+
+			fmt.Printf("psyche request error: endpoint=%s, error=%s", endpoint, err)
 		}
 
 		return
