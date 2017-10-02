@@ -44,7 +44,7 @@ func (p *registerPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendM
 			continue
 		}
 
-		options[strings.ToLower(kv[0])] = kv[1]
+		options[strings.ToLower(kv[0])] = strings.Trim(kv[1], " ")
 	}
 
 	var msg registerMsg
@@ -101,11 +101,9 @@ func (p *registerPlugin) Refresh() error {
 }
 
 func validateURL(msg registerMsg) (err error) {
-	str := fmt.Sprintf("Psyche room registration invoked by %s and url %s", msg.Key, msg.URL)
-
 	// Post the response to registered room URL
 	body := new(bytes.Buffer)
-	err = json.NewEncoder(body).Encode(types.NewSendMsg(str))
+	err = json.NewEncoder(body).Encode(types.NewSendMsg("Psyche room registration invoked"))
 	if err != nil {
 		return types.ErrRelay{Err: fmt.Errorf("failed to encode response body with error %s", err)}
 	}
