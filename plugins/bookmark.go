@@ -19,7 +19,7 @@ type bookmarkPlugin struct {
 }
 
 // Minimum number of tags per message
-const tagsPerMessage = 0.05
+const tagsPerMessage = 0.1
 
 // NewBookmarkPlugin creates an instance of bookmark plugin implementing Psyche interface
 func NewBookmarkPlugin(db *sql.DB, p Psyches) Psyche {
@@ -28,7 +28,7 @@ func NewBookmarkPlugin(db *sql.DB, p Psyches) Psyche {
 	// FIXME: DB admin job in the absence of shell access, devise a better approach for one-off jobs
 	// r.db.Exec("DROP TABLE bookmark")
 
-	_, err := r.db.Exec("CREATE TABLE IF NOT EXISTS bookmark (user_id text, userbase_id text, room_id text, tags text[], keywords text[], ctime date, message text)")
+	_, err := r.db.Exec("CREATE TABLE IF NOT EXISTS bookmark (user_id text, userbase_id text, room_id text, tags text[], keywords text[], ctime timestamp, message text)")
 	if err != nil {
 		return nil
 	}
