@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"bitbucket.org/psyche/types"
@@ -23,6 +24,9 @@ type registerMsg struct {
 	URL  string `json:"url"`
 }
 
+// Sanitize the input to extract key-value pairs
+var sanitizeInputRx = regexp.MustCompile("[ \t]*=[ \t]*")
+
 func NewRegisterPlugin(db *sql.DB, p Psyches) Psyche {
 	r := &registerPlugin{types.DBH{db}, p}
 
@@ -35,16 +39,20 @@ func NewRegisterPlugin(db *sql.DB, p Psyches) Psyche {
 }
 
 func (p *registerPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg, error) {
+	rmsg.Message = sanitizeInputRx.ReplaceAllString(rmsg.Message, "=")
+
 	// Extract key=value pairs from the message
 	fields := strings.Fields(rmsg.Message)
 	var options = make(map[string]string)
 	for _, f := range fields {
+		// There can be embedded '=' in the value and we do not want to split them
 		kv := strings.SplitN(f, "=", 2)
 		if len(kv) != 2 {
 			continue
 		}
 
-		options[strings.ToLower(kv[0])] = strings.Trim(kv[1], " ")
+		// Normalize the key to lower case
+		options[strings.ToLower(kv[0])] = kv[1]
 	}
 
 	var msg registerMsg
