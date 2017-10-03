@@ -1,5 +1,7 @@
 ## Psyche the mind
 
+**It is a weekend project, beware before completely relying on it**
+
 Psyche is a smart backend service for bots. It exposes endpoints for performing message relay, index messages based on hash tags with smart tag extraction to enrich and simple search.
 
 
@@ -44,4 +46,5 @@ The search results will be sent to a dedicated room registered by the user in th
 
 ### Artifacts and deployment
 
-It is currently deployed in [`Atlassian ddev`](https://psyche.ap-southeast-2.dev.atl-paas.net) environment
+It is currently deployed in [`Atlassian dev-west2`](https://psyche.us-west-2.dev.atl-paas.net
+) environment
