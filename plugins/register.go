@@ -30,6 +30,9 @@ var sanitizeInputRx = regexp.MustCompile("[ \t]*=[ \t]*")
 func NewRegisterPlugin(db *sql.DB, p Psyches) Psyche {
 	r := &registerPlugin{types.DBH{db}, p}
 
+	// FIXME: DB admin job in the absence of shell access, devise a better approach for one-off jobs
+	// r.db.Exec("DROP TABLE rooms")
+
 	_, err := r.db.Exec("CREATE TABLE IF NOT EXISTS rooms (room_key text, room_url text, room_name text, PRIMARY KEY (room_key))")
 	if err != nil {
 		return nil

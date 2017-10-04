@@ -2,11 +2,11 @@ package plugins
 
 import (
 	"database/sql"
+	"fmt"
 	"net/url"
-
 	"strings"
 
-	"fmt"
+	"strconv"
 
 	"bitbucket.org/psyche/types"
 	"bitbucket.org/psyche/utils"
@@ -41,6 +41,8 @@ func (p *bookmarkPlugin) Handle(u *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		return nil, nil
 	}
 
+	disableHashCheck, _ := strconv.ParseBool(u.Query().Get("disableHashCheck"))
+
 	// Context: userbaseID:chatroomID
 	scope := strings.Split(rmsg.Context, ":")
 	if len(scope) != 2 {
@@ -48,10 +50,9 @@ func (p *bookmarkPlugin) Handle(u *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 	}
 
 	// Extract tags and smart tags from message
-	tags, keywords := utils.ExtractTags(rmsg.Message, tagsPerMessage)
+	tags, keywords := utils.ExtractTags(rmsg.Message, tagsPerMessage, disableHashCheck)
 
-	// If we do not have a single tag, this message is not meant for searching
-	if len(tags) == 0 {
+	if !disableHashCheck && len(tags) == 0 {
 		return nil, nil
 	}
 

@@ -35,7 +35,7 @@ var ignoreFilter = map[string]string{
 	"quiet":  "@",
 }
 
-func ExtractTags(msg string, pct float64) ([]string, []string) {
+func ExtractTags(msg string, pct float64, disableHashCheck bool) ([]string, []string) {
 	doc := summarize.NewDocument(msg)
 	words := tokenize.NewTreebankWordTokenizer().Tokenize(doc.Content)
 
@@ -59,8 +59,7 @@ func ExtractTags(msg string, pct float64) ([]string, []string) {
 		prevWord = w
 	}
 
-	// TODO: For now, let us index only messages with explicit tagMap words
-	if len(tagMap) == 0 {
+	if !disableHashCheck && len(tagMap) == 0 {
 		return nil, nil
 	}
 
