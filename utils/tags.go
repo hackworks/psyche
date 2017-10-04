@@ -49,8 +49,8 @@ func ExtractTags(msg string, pct float64, disableHashCheck bool) ([]string, []st
 			return nil, nil
 		}
 
-		// Store the hash tagMap and ignore multiple hashes
-		if prevWord == "#" && w != "#" {
+		// Store the hash tagMap and @ mentions by ignoring repeats
+		if (prevWord == "#" || prevWord == "@") && w != prevWord {
 			lw := strings.ToLower(w)
 			tags = append(tags, lw)
 			tagMap[lw] = 1
