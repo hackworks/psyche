@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"bitbucket.org/psyche/plugins"
@@ -39,7 +40,14 @@ func httpHandler(endpoint string) func(w http.ResponseWriter, req *http.Request)
 			w.Write([]byte(err.Error()))
 			w.Write([]byte("\r\n"))
 
-			fmt.Printf("psyche request error: endpoint=%s, error=%s", endpoint, err)
+			if p, ok := psyches["relay"]; ok {
+				u := url.URL{}
+				u.Query().Add("source", msg.Context)
+				u.Query().Add("target", "error:error")
+				msg.Message = fmt.Sprintf("psyche request error: endpoint=%s, error=%s", endpoint, err)
+
+				p.Handle(&u, msg)
+			}
 		}
 
 		return

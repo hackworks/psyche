@@ -44,7 +44,7 @@ func (p *bookmarkPlugin) Handle(u *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 	disableHashCheck, _ := strconv.ParseBool(u.Query().Get("disableHashCheck"))
 
 	// Context: userbaseID:chatroomID
-	scope := strings.Split(rmsg.Context, ":")
+	scope := strings.SplitN(rmsg.Context, ":", 2)
 	if len(scope) != 2 {
 		return nil, types.ErrBookmark{fmt.Errorf("missing userbase:chatroom for scope")}
 	}

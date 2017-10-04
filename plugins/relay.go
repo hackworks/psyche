@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -37,11 +36,6 @@ func NewRelayPlugin(db *sql.DB, p Psyches) Psyche {
 }
 
 func (p *relayPlugin) init() {
-	p.roomMapping.Store("garage", &roomInfo{"Dhruva's private room", "https://botnana.domain.dev.atlassian.io/message?secret=86ebf927b1754b8deb759c1c29701f4bb3ed5bb50eecac981fe9bcb26a733700745c46c4550c2ef8"})
-	p.roomMapping.Store("perms_dev", &roomInfo{"Perms Dev", "https://botnana.domain.dev.atlassian.io/message?secret=e74648426f6e0c67b750c7ebb7aa021f334bce305b19aeea562f72dbbf02fad59e1370f77b662332"})
-	p.roomMapping.Store("permissions_service", &roomInfo{"Permissions Service", "https://botnana.domain.dev.atlassian.io/message?secret=126b4ff64e38d95929924a2b3527b24512ae8e366149d41f168bd0a84b8ddc8dcc07d4cf35ad4c17"})
-	p.roomMapping.Store("triforce", &roomInfo{"Triforce (MTV Identity)", "https://botnana.domain.dev.atlassian.io/message?secret=c80c4ee687de9b95784916882d005a9e69f2ce91c76604a68e77cbdda2da79690ab5987058fc1aea"})
-
 	p.Refresh()
 }
 
@@ -53,7 +47,11 @@ func (p *relayPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg,
 	source := url.Query().Get("source")
 	target := url.Query().Get("target")
 
-	sourceRoom := "Unknown"
+	if len(source) == 0 {
+		source = rmsg.Context
+	}
+
+	sourceRoom := "Unnamed room"
 	if val, ok := p.roomMapping.Load(source); ok {
 		s, _ := val.(*roomInfo)
 		sourceRoom = s.name
@@ -88,14 +86,18 @@ func (p *relayPlugin) Refresh() error {
 }
 
 func (p *relayPlugin) RelayMsg(target string, smsg *types.SendMsg) error {
+	if len(target) == 0 {
+		target = "error:error"
+	}
+
 	val, ok := p.roomMapping.Load(target)
 	if !ok {
-		return types.ErrRelay{errors.New("target room to send results missing")}
+		return types.ErrRelay{fmt.Errorf("target room mapping missing for %s", target)}
 	}
 
 	room, ok := val.(*roomInfo)
 	if !ok {
-		return types.ErrRelay{fmt.Errorf("target room mapping missing for %s", target)}
+		return types.ErrRelay{fmt.Errorf("target room mapping typecasting failed for %s", target)}
 	}
 
 	// Prepare response for POST
