@@ -45,12 +45,8 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 
 	target := url.Query().Get("target")
 	if len(target) == 0 {
-		// Look for user registered room for sending messages
-		if _, ok := relay.roomMapping.Load(rmsg.Sender.ID); !ok {
-			return nil, types.ErrSearch{errors.New("target room to send results missing")}
-		}
-
-		target = rmsg.Sender.ID
+		// Look for user registered room for sending messages (UserbaseId:AAID)
+		target = scope[0] + ":" + rmsg.Sender.ID
 	}
 
 	// TODO:
@@ -123,7 +119,7 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		}
 
 		smsg := types.SendMsg{resultHeader + buff.String(), "text"}
-		relay.RelayMsg(target, &smsg)
+		err = relay.RelayMsg(target, &smsg)
 	}
 
 	return nil, err
