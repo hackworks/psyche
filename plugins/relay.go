@@ -60,7 +60,7 @@ func (p *relayPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg,
 	// Get the response to relay
 	smsg := p.getResponse(sourceRoom, rmsg)
 
-	return smsg, p.RelayMsg(target, smsg)
+	return smsg, p.RelayMsg(rmsg, target, smsg)
 }
 
 func (p *relayPlugin) Refresh() error {
@@ -85,14 +85,18 @@ func (p *relayPlugin) Refresh() error {
 	return rows.Close()
 }
 
-func (p *relayPlugin) RelayMsg(target string, smsg *types.SendMsg) error {
-	if len(target) == 0 {
-		target = "error:error"
-	}
-
+func (p *relayPlugin) RelayMsg(rmsg *types.RecvMsg, target string, smsg *types.SendMsg) error {
+	// Attempt with given target
 	val, ok := p.roomMapping.Load(target)
 	if !ok {
-		return types.ErrRelay{fmt.Errorf("target room mapping missing for %s", target)}
+		// If we fail, we attempt to send response to room from which we got the request
+		target = rmsg.Context
+		val, ok = p.roomMapping.Load(target)
+
+		// If we don't have that room registered, we cannot do much, return error and send to "error:error"
+		if !ok {
+			return types.ErrRelay{fmt.Errorf("target room mapping missing for %s", target)}
+		}
 	}
 
 	room, ok := val.(*roomInfo)
