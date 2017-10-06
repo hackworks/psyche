@@ -25,10 +25,11 @@ func TestExtractTags(t *testing.T) {
 
 func TestExtractQueryTags(t *testing.T) {
 	const msg = `
-	Hello    this is+a message to search
+	Hello    this is+a message to search @quiet hello
 	`
 
 	op, tags := ExtractQueryTags(msg)
 	require.Equal(t, byte('+'), op)
 	require.NotEmpty(t, tags)
+	require.NotContains(t, tags, "@quiet")
 }

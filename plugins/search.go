@@ -119,7 +119,7 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		}
 
 		smsg := types.SendMsg{resultHeader + buff.String(), "text"}
-		err = relay.RelayMsg(target, &smsg)
+		err = relay.RelayMsg(rmsg, target, &smsg)
 	}
 
 	return nil, err

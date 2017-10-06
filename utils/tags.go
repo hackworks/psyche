@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -29,10 +31,23 @@ func (s keywordArray) Less(i, j int) bool {
 
 // Map of suffix and prefix since we break them at tokenize
 var ignoreFilter = map[string]string{
-	"search": "@",
-	"ignore": "@",
-	"silent": "@",
-	"quiet":  "@",
+	"search":   "@",
+	"ignore":   "@",
+	"silent":   "@",
+	"quiet":    "@",
+	"find":     "@",
+	"register": "@",
+}
+
+var ignoreFilterRegex *regexp.Regexp
+
+func init() {
+	var fw []string
+	for k, v := range ignoreFilter {
+		fw = append(fw, v+k)
+	}
+
+	ignoreFilterRegex = regexp.MustCompile(fmt.Sprintf("(%s)", strings.Join(fw, "|")))
 }
 
 func ExtractTags(msg string, pct float64, disableHashCheck bool) ([]string, []string) {
@@ -96,8 +111,7 @@ func ExtractQueryTags(msg string) (byte, []string) {
 		queryOp = '+'
 	}
 
-	// Extract words after cleanup of any operators
-	words := tokenize.NewWordBoundaryTokenizer().Tokenize(msg)
-
-	return queryOp, words
+	// Strip out the ignore words from the query input
+	msg = ignoreFilterRegex.ReplaceAllString(msg, "")
+	return queryOp, tokenize.NewWordBoundaryTokenizer().Tokenize(msg)
 }
