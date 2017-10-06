@@ -15,11 +15,11 @@ func TestExtractTags(t *testing.T) {
 	This is a test for extracting tags from messages with #imp and regular but important text
 	`
 
-	tags, keywords := ExtractTags(msg, 0.05, false)
+	tags, keywords := ExtractIndexTags(msg, 0.05, 0, false)
 	require.NotEmpty(t, append(tags, keywords...))
 
 	// Test message with ignore pattern
-	tags, keywords = ExtractTags(msg+"some ignore text @search pattern in message", 0.05, false)
+	tags, keywords = ExtractIndexTags(msg+"some ignore text @search pattern in message", 0.05, 5, false)
 	require.Empty(t, append(tags, keywords...))
 }
 

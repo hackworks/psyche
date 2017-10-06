@@ -57,7 +57,7 @@ func (p *registerPlugin) Handle(u *url.URL, rmsg *types.RecvMsg) (smsg *types.Se
 	// Context: userbaseID:chatroomID/AAID
 	scope := strings.SplitN(rmsg.Context, ":", 2)
 	if len(scope) != 2 {
-		return nil, types.ErrBookmark{fmt.Errorf("missing userbase:chatroom/aaid for scope")}
+		return nil, types.ErrIndexer{fmt.Errorf("missing userbase:chatroom/aaid for scope")}
 	}
 
 	// Extract key=value pairs from the message

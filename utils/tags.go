@@ -29,28 +29,38 @@ func (s keywordArray) Less(i, j int) bool {
 	return s[i].freq > s[j].freq
 }
 
-// Map of suffix and prefix since we break them at tokenize
-var ignoreFilter = map[string]string{
-	"search":   "@",
-	"ignore":   "@",
-	"silent":   "@",
-	"quiet":    "@",
-	"find":     "@",
-	"register": "@",
-}
-
-var ignoreFilterRegex *regexp.Regexp
+var ignoreQueryTagsFilterRegex, ignoreIndexTagsFilterRegex *regexp.Regexp
 
 func init() {
-	var fw []string
-	for k, v := range ignoreFilter {
-		fw = append(fw, v+k)
+	// Map of suffix and prefix since we break them at tokenize
+	var ignoreQueryWords = []string{
+		"@search",
+		"@ignore",
+		"@silent",
+		"@quiet",
+		"@find",
+		"@register",
+		"@botler",
 	}
 
-	ignoreFilterRegex = regexp.MustCompile(fmt.Sprintf("(%s)", strings.Join(fw, "|")))
+	var ignoreIndexWords []string = append(ignoreQueryWords, []string{
+		"@all",
+		"@here",
+	}...)
+
+	ignoreQueryTagsFilterRegex = regexp.MustCompile(fmt.Sprintf("(%s)", strings.Join(ignoreQueryWords, "|")))
+	ignoreIndexTagsFilterRegex = regexp.MustCompile(fmt.Sprintf("(%s)", strings.Join(ignoreIndexWords, "|")))
 }
 
-func ExtractTags(msg string, pct float64, disableHashCheck bool) ([]string, []string) {
+func ExtractIndexTags(msg string, pct float64, minWords int, disableHashCheck bool) ([]string, []string) {
+	// Check if message is to be ignored
+	if ignoreIndexTagsFilterRegex.MatchString(msg) {
+		return nil, nil
+	}
+
+	// Strip out the ignore words from the query input
+	msg = ignoreQueryTagsFilterRegex.ReplaceAllString(msg, "")
+
 	doc := summarize.NewDocument(msg)
 	words := tokenize.NewTreebankWordTokenizer().Tokenize(doc.Content)
 
@@ -59,11 +69,6 @@ func ExtractTags(msg string, pct float64, disableHashCheck bool) ([]string, []st
 	var tagMap = make(map[string]byte)
 
 	for _, w := range words {
-		// Look for ignore filter and skip bookmarking them
-		if p, ok := ignoreFilter[w]; ok && prevWord == p {
-			return nil, nil
-		}
-
 		// Store the hash tagMap and @ mentions by ignoring repeats
 		if (prevWord == "#" || prevWord == "@") && w != prevWord {
 			lw := strings.ToLower(w)
@@ -74,7 +79,8 @@ func ExtractTags(msg string, pct float64, disableHashCheck bool) ([]string, []st
 		prevWord = w
 	}
 
-	if !disableHashCheck && len(tagMap) == 0 {
+	// Check if we have sufficient index data to index the message
+	if len(tagMap) == 0 && (!disableHashCheck || (minWords > 0 && len(words) < minWords)) {
 		return nil, nil
 	}
 
@@ -112,6 +118,6 @@ func ExtractQueryTags(msg string) (byte, []string) {
 	}
 
 	// Strip out the ignore words from the query input
-	msg = ignoreFilterRegex.ReplaceAllString(msg, "")
+	msg = ignoreQueryTagsFilterRegex.ReplaceAllString(msg, "")
 	return queryOp, tokenize.NewWordBoundaryTokenizer().Tokenize(msg)
 }
