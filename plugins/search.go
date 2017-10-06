@@ -21,7 +21,7 @@ type searchPlugin struct {
 // Limit the number of search results to prevent clogging output
 const resultLimit = 50
 
-// NewBookmarkPlugin creates an instance of bookmark plugin implementing Psyche interface
+// NewSearchPlugin creates an instance of search plugin implementing Psyche interface
 func NewSearchPlugin(db *sql.DB, p Psyches) Psyche {
 	return &searchPlugin{types.DBH{db}, p}
 }
@@ -61,11 +61,11 @@ func (p *searchPlugin) Handle(url *url.URL, rmsg *types.RecvMsg) (*types.SendMsg
 		return nil, nil
 	}
 
-	const queryORSelf = "SELECT ctime, message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
-	const queryANDSelf = "SELECT ctime, message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
+	const queryORSelf = "SELECT ctime, message FROM indexer WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
+	const queryANDSelf = "SELECT ctime, message FROM indexer WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) AND user_id=$5 ORDER BY ctime DESC LIMIT $4"
 
-	const queryORRoom = "SELECT ctime, message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) ORDER BY ctime DESC LIMIT $4"
-	const queryANDRoom = "SELECT ctime, message FROM bookmark WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) ORDER BY ctime DESC LIMIT $4"
+	const queryORRoom = "SELECT ctime, message FROM indexer WHERE userbase_id=$1 AND room_id=$2 AND $3 && (tags || keywords) ORDER BY ctime DESC LIMIT $4"
+	const queryANDRoom = "SELECT ctime, message FROM indexer WHERE userbase_id=$1 AND room_id=$2 AND $3 <@ (tags || keywords) ORDER BY ctime DESC LIMIT $4"
 
 	var err error
 	var rows *sql.Rows

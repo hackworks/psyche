@@ -27,11 +27,11 @@ func (e ErrRegister) Error() string {
 	return e.Err.Error()
 }
 
-// ErrBookmark captures bookmark plugin errors
-type ErrBookmark struct {
+// ErrIndexer captures indexer plugin errors
+type ErrIndexer struct {
 	Err error
 }
 
-func (e ErrBookmark) Error() string {
+func (e ErrIndexer) Error() string {
 	return e.Err.Error()
 }
