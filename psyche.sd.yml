@@ -13,7 +13,7 @@ links:
   healthcheck:
     uri: /healthcheck
   source:
-    url: ssh://git@bitbucket.org/dkrishnamurthy/psyche.git
+    url: https://bitbucket.org/hackworks/psyche
 
 resources:
   - type: postgres-db
